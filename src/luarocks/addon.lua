@@ -6,6 +6,10 @@ local util = require("luarocks.util")
 
 local addons = {}
 
+--- Load a list of addons.
+-- An addon "$u" is simply the Lua module "luarocks.addon.$u". It is supposed
+-- to contain at least two fields - types, used for type-checking and run, a
+-- function to be called with the rockspec table.
 local function load_addons(using)
    util.platform_overrides(using)
    for _, u in ipairs(using) do
@@ -17,6 +21,7 @@ local function load_addons(using)
    end
 end
 
+--- Augment the type table with relevant type tables from required addons.
 function addon.augment_addon_types(typetbl, rockspec)
    local using = rockspec.using
    if not using then return typetbl end
@@ -43,6 +48,7 @@ function addon.augment_addon_types(typetbl, rockspec)
    return augmented_typetbl
 end
 
+--- Run addons found in rockspec.using.
 function addon.run_addons(rockspec)
    -- NOTE We assume that this rockspec has been type-checked and hence all
    -- relevant addons have been loaded.
