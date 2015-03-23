@@ -38,6 +38,10 @@ local rockspec_types = {
       license = string_1,
       maintainer = string_1,
    },
+   using = {
+      platforms = {}, -- recursively defined below
+      _any = string_1,
+   },
    dependencies = {
       platforms = {}, -- recursively defined below
       _any = string_1,
@@ -101,10 +105,12 @@ local rockspec_types = {
 type_check.rockspec_order = {"rockspec_format", "package", "version", 
    { "source", { "url", "tag", "branch", "md5" } },
    { "description", {"summary", "detailed", "homepage", "license" } },
+   "using",
    "supported_platforms", "dependencies", "external_dependencies",
    { "build", {"type", "modules", "copy_directories", "platforms"} },
    "hooks"}
 
+rockspec_types.using.platforms._any = rockspec_types.using
 rockspec_types.build.platforms._any = rockspec_types.build
 rockspec_types.dependencies.platforms._any = rockspec_types.dependencies
 rockspec_types.external_dependencies.platforms._any = rockspec_types.external_dependencies
@@ -319,9 +325,12 @@ function type_check.type_check_rockspec(rockspec, globals)
    if not rockspec.rockspec_format then
       rockspec.rockspec_format = "1.0"
    end
-   local ok, err = check_undeclared_globals(globals, rockspec_types)
+   local addon = require("luarocks.addon")
+   local types, err = addon.augment_addon_types(rockspec_types, addon.addons)
+   if err then return nil, err end
+   local ok, err = check_undeclared_globals(globals, types)
    if not ok then return nil, err end
-   return type_check_table(rockspec.rockspec_format, rockspec, rockspec_types, "")
+   return type_check_table(rockspec.rockspec_format, rockspec, types, "")
 end
 
 --- Type check a manifest table.

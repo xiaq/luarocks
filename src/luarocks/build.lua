@@ -16,6 +16,7 @@ local deps = require("luarocks.deps")
 local manif = require("luarocks.manif")
 local remove = require("luarocks.remove")
 local cfg = require("luarocks.cfg")
+local addon = require("luarocks.addon")
 
 build.help_summary = "Build/compile a rock."
 build.help_arguments = "[--pack-binary-rock] [--keep] {<rockspec>|<rock>|<name> [<version>]}"
@@ -258,6 +259,8 @@ function build.build_rockspec(rockspec_file, need_to_fetch, minimal_mode, deps_m
          return nil, "Build error: " .. err
       end
    end
+
+   addon.run_addons(rockspec)
 
    if build_spec.install then
       for id, install_dir in pairs(dirs) do
