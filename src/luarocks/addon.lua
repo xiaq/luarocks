@@ -2,53 +2,53 @@
 local addon = {}
 package.loaded["luarocks.addon"] = addon
 
--- TODO Let type_check export this and use it
-local string_1 = { _type = "string" }
+local util = require("luarocks.util")
 
-addon.addons = {
-   {
-      name = "hello",
-      types = { hello_target = string_1 },
-      run = function(tbl)
-         print("Hello "..(tbl.hello_target or "world").. "!")
-      end
-   },
-   {
-      name = "bye",
-      types = { bye_target = string_1 },
-      run = function(tbl)
-         print("Bye "..(tbl.bye_target or "cruel world").. "!")
-      end
-   }
-}
+local addons = {}
 
-addon.addons_map = {}
-
-for _, a in ipairs(addon.addons) do
-   addon.addons_map[a.name] = a
+local function load_addons(using)
+   util.platform_overrides(using)
+   for _, u in ipairs(using) do
+      local pkg = "luarocks.addon."..u
+      local status, err = pcall(require, pkg)
+      if not status then return err end
+      addons[u] = package.loaded[pkg]
+      -- TODO Type-check loaded addon.
+   end
 end
 
-function addon.augment_addon_types(typetbl, addons)
+function addon.augment_addon_types(typetbl, rockspec)
+   local using = rockspec.using
+   if not using then return typetbl end
+
+   -- TODO Type-check rockspec.using.
+   local err = load_addons(using)
+   if err then return nil, err end
+
    local augmented_typetbl, origin = {}, {}
    for k, t in pairs(typetbl) do
       augmented_typetbl[k] = t
       origin[k] = "builtin fields"
    end
-   for _, a in ipairs(addons) do
-      for k, t in pairs(a.types) do
+
+   for _, u in ipairs(using) do
+      for k, t in pairs(addons[u].types) do
          if augmented_typetbl[k] ~= nil then
             return nil, "Field "..k.." in addon "..a.name.." conflicts with that from "..origin[k]
          end
          augmented_typetbl[k] = t
-         origin[k] = "addon "..a.name
+         origin[k] = "addon "..u
       end
    end
    return augmented_typetbl
 end
 
 function addon.run_addons(rockspec)
-   if not rockspec.using then return end
-   for _, name in ipairs(rockspec.using) do
-      addon.addons_map[name].run(rockspec)
+   -- NOTE We assume that this rockspec has been type-checked and hence all
+   -- relevant addons have been loaded.
+   local using = rockspec.using
+   if not using then return end
+   for _, name in ipairs(using) do
+      addons[name].run(rockspec)
    end
 end

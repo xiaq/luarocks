@@ -326,7 +326,7 @@ function type_check.type_check_rockspec(rockspec, globals)
       rockspec.rockspec_format = "1.0"
    end
    local addon = require("luarocks.addon")
-   local types, err = addon.augment_addon_types(rockspec_types, addon.addons)
+   local types, err = addon.augment_addon_types(rockspec_types, rockspec)
    if err then return nil, err end
    local ok, err = check_undeclared_globals(globals, types)
    if not ok then return nil, err end
